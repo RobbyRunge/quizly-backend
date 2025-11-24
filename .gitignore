@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.so
+
+# Virtual Environment
+.venv/
+env/
+venv/
+ENV/
+
+# Django
+*.sqlite3
+db.sqlite3
+*.log
+media/
+staticfiles/
+.env
+.env.local
+
+# VS Code
+.vscode/
+
+# MacOS
+.DS_Store
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Test/coverage
+htmlcov/
+.coverage
+.coverage.*
+.tox/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.pytest_cache/
+
+# Node (falls vorhanden)
+node_modules/
+
+# Misc
+*.bak
+*.swp
+*.tmp
+
+# Git
+*.orig
