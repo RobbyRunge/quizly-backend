@@ -121,12 +121,6 @@ class TestRegisterView:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert 'confirmed_password' in response.data
 
-    # Password length validation removed in new implementation
-
-    # Username length validation removed in new implementation
-
-    # Duplicate username check removed in new implementation
-
     def test_register_user_duplicate_email(self, api_client, existing_user):
         """
         Test registration fails with already existing email.

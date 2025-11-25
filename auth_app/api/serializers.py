@@ -17,9 +17,6 @@ class RegistrationSerializer(serializers.ModelSerializer):
             'password': {
                 'write_only': True
             },
-            'email': {
-                'required': True
-            }
         }
 
     def validate_confirmed_password(self, value):
@@ -29,6 +26,8 @@ class RegistrationSerializer(serializers.ModelSerializer):
         return value
 
     def validate_email(self, value):
+        if not value:
+            raise serializers.ValidationError('Email is required')
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError('Email already exists')
         return value
@@ -47,26 +46,27 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     """
     Custom serializer to authenticate users using email and password instead of username.
     """
-    email = serializers.EmailField()
+    username = serializers.CharField()
     password = serializers.CharField(write_only=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        if 'username' in self.fields:
-            self.fields.pop('username')
-
     def validate(self, attrs):
-        email = attrs.get('email')
+        username = attrs.get('username')
         password = attrs.get('password')
 
         try:
-            user = User.objects.get(email=email)
+            user = User.objects.get(username=username)
         except User.DoesNotExist:
-            raise serializers.ValidationError('Incorrect email or password.')
+            raise serializers.ValidationError(
+                'Incorrect username or password.'
+            )
 
         if not user.check_password(password):
-            raise serializers.ValidationError('Incorrect email or password.')
+            raise serializers.ValidationError(
+                'Incorrect username or password.'
+            )
 
         attrs['username'] = user.username
         data = super().validate(attrs)
