@@ -101,12 +101,12 @@ class CookieTokenRefreshView(TokenRefreshView):
     """
 
     def post(self, request, *args, **kwargs):
-        refresh_token = request.COOKIES.get('refresh_token')
+        refresh_token = request.COOKIES.get('refresh_token') or request.data.get('refresh')
 
         if refresh_token is None:
             return Response(
                 {"error": "Refresh token not found in cookies."},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_401_UNAUTHORIZED
             )
 
         serializer = self.get_serializer(data={'refresh': refresh_token})
@@ -116,12 +116,15 @@ class CookieTokenRefreshView(TokenRefreshView):
         except Exception:
             return Response(
                 {"error": "Refresh token invalid."},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_401_UNAUTHORIZED
             )
 
         access_token = serializer.validated_data.get('access')
 
-        response = Response({"message": "Token refreshed successfully."})
+        response = Response({
+            "detail": "Token refreshed.",
+            "access": access_token
+        })
 
         response.set_cookie(
             key="access_token",
