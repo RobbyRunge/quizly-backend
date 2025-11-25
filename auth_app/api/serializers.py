@@ -48,26 +48,3 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     """
     username = serializers.CharField()
     password = serializers.CharField(write_only=True)
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def validate(self, attrs):
-        username = attrs.get('username')
-        password = attrs.get('password')
-
-        try:
-            user = User.objects.get(username=username)
-        except User.DoesNotExist:
-            raise serializers.ValidationError(
-                'Incorrect username or password.'
-            )
-
-        if not user.check_password(password):
-            raise serializers.ValidationError(
-                'Incorrect username or password.'
-            )
-
-        attrs['username'] = user.username
-        data = super().validate(attrs)
-        return data
