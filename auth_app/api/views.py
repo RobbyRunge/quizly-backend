@@ -1,10 +1,10 @@
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework import status
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from .serializers import CustomTokenObtainPairSerializer, RegistrationSerializer
+from .serializers import RegistrationSerializer
 
 
 class RegistrationView(APIView):
@@ -27,6 +27,25 @@ class RegistrationView(APIView):
                 serializer.errors,
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+    
+class LogoutView(APIView):
+    """
+    User logout view that clears the JWT cookies.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        response = Response(
+            {'detail': 'Log-Out successfully! All Tokens will be deleted. Refresh token is now invalid.'},
+            status=status.HTTP_200_OK
+        )
+
+        # Clear the access and refresh token cookies
+        response.delete_cookie('access_token')
+        response.delete_cookie('refresh_token')
+
+        return response
 
 
 class CookieTokenObtainPairView(TokenObtainPairView):
