@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt',
     'auth_app',
@@ -49,6 +50,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -145,3 +147,13 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
 }
+
+
+# CORS Configuration
+
+CORS_ALLOWED_ORIGINS = os.getenv(
+    'CORS_ALLOWED_ORIGINS',
+    'http://localhost:3000'
+).split(',')
+
+CORS_ALLOW_CREDENTIALS = True
