@@ -169,7 +169,8 @@ class TestRegisterView:
         data = {
             'username': 'testuser',
             'password': 'SecurePass123',
-            'confirmed_password': 'SecurePass123'
+            'confirmed_password': 'SecurePass123',
+            'email': ''
         }
         response = api_client.post(self.url, data)
 

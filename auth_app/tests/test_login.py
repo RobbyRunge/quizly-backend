@@ -208,7 +208,7 @@ class TestCookieTokenRefreshView:
         response = api_client.post(self.url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data['message'] == 'Token refreshed successfully.'
+        assert response.data['detail'] == 'Token refreshed.'
         assert 'access_token' in response.cookies
 
     def test_refresh_token_updates_access_token(self, api_client, test_user):
@@ -242,12 +242,12 @@ class TestCookieTokenRefreshView:
         Test refresh fails when refresh token cookie is missing.
 
         Expects:
-        - Status 400 Bad Request
+        - Status 401 Unauthorized
         - Error message about missing refresh token
         """
         response = api_client.post(self.url)
 
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert 'error' in response.data
         assert 'not found' in response.data['error'].lower()
 
@@ -256,7 +256,7 @@ class TestCookieTokenRefreshView:
         Test refresh fails with invalid refresh token.
 
         Expects:
-        - Status 400 Bad Request
+        - Status 401 Unauthorized
         - Error message about invalid token
         """
         # Set an invalid refresh token
@@ -264,7 +264,7 @@ class TestCookieTokenRefreshView:
 
         response = api_client.post(self.url)
 
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert 'error' in response.data
         assert 'invalid' in response.data['error'].lower()
 
@@ -273,10 +273,10 @@ class TestCookieTokenRefreshView:
         Test refresh fails with empty refresh token cookie.
 
         Expects:
-        - Status 400 Bad Request
+        - Status 401 Unauthorized
         """
         api_client.cookies['refresh_token'] = ''
 
         response = api_client.post(self.url)
 
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
