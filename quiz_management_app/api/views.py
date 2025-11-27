@@ -288,3 +288,18 @@ class CreateQuizView(APIView):
         Check if error is a rate limit error.
         """
         return '429' in error_msg or 'RESOURCE_EXHAUSTED' in error_msg
+
+
+class ListQuizView(APIView):
+    """
+    API endpoint to list all quizzes created by the authenticated user.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """
+        List all quizzes for the authenticated user.
+        """
+        quizzes = Quiz.objects.filter(created_by=request.user)
+        serializer = QuizSerializer(quizzes, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
