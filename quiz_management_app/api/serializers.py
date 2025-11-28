@@ -40,6 +40,24 @@ class QuizSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at']
 
 
+class UpdateQuizSerializer(serializers.ModelSerializer):
+    """
+    Serializer for partial updates to Quiz model.
+    """
+    class Meta:
+        model = Quiz
+        fields = [
+            'title',
+            'description',
+            'video_url'
+        ]
+        extra_kwargs = {
+            'title': {'required': False},
+            'description': {'required': False},
+            'video_url': {'required': False}
+        }
+
+
 class CreateQuizSerializer(serializers.Serializer):
     """
     Serializer for quiz creation from YouTube URL.

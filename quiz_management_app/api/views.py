@@ -11,7 +11,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from quiz_management_app.models import Quiz, Question
-from .serializers import CreateQuizSerializer, QuizSerializer
+from .serializers import CreateQuizSerializer, QuizSerializer, UpdateQuizSerializer
 
 
 # Configure Gemini API Client
@@ -338,3 +338,40 @@ class QuizDetailView(APIView):
 
         serializer = QuizSerializer(quiz)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, request, pk):
+        """
+        Partially update a quiz by ID.
+
+        Returns:
+        - 200: Quiz successfully updated
+        - 400: Invalid request data
+        - 401: Not authenticated
+        - 403: Access denied - Quiz does not belong to user
+        - 404: Quiz not found
+        """
+        try:
+            quiz = Quiz.objects.get(pk=pk)
+        except Quiz.DoesNotExist:
+            return Response(
+                {'error': 'Quiz not found.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Check if quiz belongs to authenticated user
+        if quiz.created_by != request.user:
+            return Response(
+                {'error': 'Access denied - Quiz does not belong to you.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Validate and update quiz
+        serializer = UpdateQuizSerializer(quiz, data=request.data, partial=True)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer.save()
+
+        # Return full quiz data with questions
+        quiz_serializer = QuizSerializer(quiz)
+        return Response(quiz_serializer.data, status=status.HTTP_200_OK)
