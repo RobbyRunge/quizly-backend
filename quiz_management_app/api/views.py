@@ -375,3 +375,39 @@ class QuizDetailView(APIView):
         # Return full quiz data with questions
         quiz_serializer = QuizSerializer(quiz)
         return Response(quiz_serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, pk):
+        """
+        Delete a quiz and all associated questions permanently.
+
+        Returns:
+        - 204: Quiz successfully deleted
+        - 401: Not authenticated
+        - 403: Access denied - Quiz does not belong to user
+        - 404: Quiz not found
+        - 500: Internal server error
+        """
+        try:
+            quiz = Quiz.objects.get(pk=pk)
+        except Quiz.DoesNotExist:
+            return Response(
+                {'error': 'Quiz not found.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Check if quiz belongs to authenticated user
+        if quiz.created_by != request.user:
+            return Response(
+                {'error': 'Access denied - Quiz does not belong to you.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        try:
+            # Delete the quiz (associated questions will be deleted via CASCADE)
+            quiz.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            return Response(
+                {'error': f'Failed to delete quiz: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
