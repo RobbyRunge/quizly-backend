@@ -366,7 +366,8 @@ class QuizDetailView(APIView):
             )
 
         # Validate and update quiz
-        serializer = UpdateQuizSerializer(quiz, data=request.data, partial=True)
+        serializer = UpdateQuizSerializer(
+            quiz, data=request.data, partial=True)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

@@ -205,3 +205,89 @@ class TestCreateQuizView:
 
         assert response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
         assert 'error' in response.data
+
+    @patch('quiz_management_app.api.views.CreateQuizView._extract_video_id')
+    @patch('quiz_management_app.api.views.CreateQuizView._extract_video_info')
+    def test_create_quiz_with_failed_video_info_extraction(
+        self,
+        mock_extract_info,
+        mock_extract_id,
+        authenticated_client,
+        valid_youtube_url
+    ):
+        """
+        Test quiz creation fails when video info cannot be extracted.
+
+        Expects:
+        - Status 400 Bad Request
+        """
+        mock_extract_id.return_value = 'dQw4w9WgXcQ'
+        mock_extract_info.return_value = None
+
+        data = {'url': valid_youtube_url}
+        response = authenticated_client.post(self.url, data)
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert 'error' in response.data
+        assert 'Failed to extract video information' in response.data['error']
+
+    @patch('quiz_management_app.api.views.CreateQuizView._extract_video_id')
+    @patch('quiz_management_app.api.views.CreateQuizView._extract_video_info')
+    @patch('quiz_management_app.api.views.CreateQuizView._get_transcript')
+    def test_create_quiz_with_failed_transcription(
+        self,
+        mock_get_transcript,
+        mock_extract_info,
+        mock_extract_id,
+        authenticated_client,
+        valid_youtube_url,
+        mock_video_info
+    ):
+        """
+        Test quiz creation fails when transcription fails.
+
+        Expects:
+        - Status 400 Bad Request
+        """
+        mock_extract_id.return_value = 'dQw4w9WgXcQ'
+        mock_extract_info.return_value = mock_video_info
+        mock_get_transcript.return_value = None
+
+        data = {'url': valid_youtube_url}
+        response = authenticated_client.post(self.url, data)
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert 'error' in response.data
+        assert 'Failed to transcribe video audio' in response.data['error']
+
+    @patch('quiz_management_app.api.views.CreateQuizView._extract_video_id')
+    @patch('quiz_management_app.api.views.CreateQuizView._extract_video_info')
+    @patch('quiz_management_app.api.views.CreateQuizView._get_transcript')
+    @patch('quiz_management_app.api.views.CreateQuizView._generate_questions_with_ai')
+    def test_create_quiz_with_failed_question_generation(
+        self,
+        mock_generate_questions,
+        mock_get_transcript,
+        mock_extract_info,
+        mock_extract_id,
+        authenticated_client,
+        valid_youtube_url,
+        mock_video_info
+    ):
+        """
+        Test quiz creation fails when AI question generation fails.
+
+        Expects:
+        - Status 500 Internal Server Error
+        """
+        mock_extract_id.return_value = 'dQw4w9WgXcQ'
+        mock_extract_info.return_value = mock_video_info
+        mock_get_transcript.return_value = "Test transcript"
+        mock_generate_questions.return_value = None
+
+        data = {'url': valid_youtube_url}
+        response = authenticated_client.post(self.url, data)
+
+        assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+        assert 'error' in response.data
+        assert 'Failed to generate quiz questions' in response.data['error']
