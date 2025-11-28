@@ -97,7 +97,7 @@ quizly-backend/
 - Python 3.10 or higher
 - pip (Python package manager)
 - Git
-- Virtual environment tool (venv, virtualenv, or conda)
+- Virtual environment tool (venv)
 
 ### Setup
 
