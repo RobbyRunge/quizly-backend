@@ -114,11 +114,14 @@ quizly-backend/
 
 3. **Activate the virtual environment**
    ```powershell
+   # Terminal
+   .venv/Scripts/activate
+
    # Windows PowerShell
-   .\venv\Scripts\Activate.ps1
+   .\.venv\Scripts\Activate.ps1
    
    # Windows Command Prompt
-   venv\Scripts\activate.bat
+   .venv\Scripts\activate.bat
    ```
 
 4. **Install dependencies**
@@ -142,6 +145,11 @@ quizly-backend/
 7. **Create a superuser** (optional, for admin access)
    ```powershell
    python manage.py createsuperuser
+   ```
+
+8. **Run server**
+   ```powershell
+   python manage.py runserver
    ```
 
 ## Configuration
