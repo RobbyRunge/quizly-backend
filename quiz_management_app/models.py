@@ -7,7 +7,7 @@ class Quiz(models.Model):
     Quiz model representing a quiz generated from a YouTube video.
     """
     title = models.CharField(max_length=255)
-    description = models.TextField(max_length=150)
+    description = models.TextField(max_length=255)
     video_url = models.URLField()
     created_by = models.ForeignKey(
         User,

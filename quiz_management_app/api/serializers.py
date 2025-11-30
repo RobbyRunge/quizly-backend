@@ -44,18 +44,15 @@ class UpdateQuizSerializer(serializers.ModelSerializer):
     """
     Serializer for partial updates to Quiz model.
     """
+    title = serializers.CharField(required=False, max_length=255)
+    description = serializers.CharField(required=False, max_length=255)
+
     class Meta:
         model = Quiz
         fields = [
             'title',
-            'description',
-            'video_url'
+            'description'
         ]
-        extra_kwargs = {
-            'title': {'required': False},
-            'description': {'required': False},
-            'video_url': {'required': False}
-        }
 
 
 class CreateQuizSerializer(serializers.Serializer):
