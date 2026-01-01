@@ -26,6 +26,10 @@ A Django REST API backend for generating and managing quizzes from YouTube video
 
 Quizly Backend is a RESTful API service that enables users to automatically generate educational quizzes from YouTube video content. The system uses AI to transcribe videos, analyze content, and create relevant multiple-choice questions.
 
+## Quizly Frontend
+
+You can find the corresponding frontend here: [https://github.com/RobbyRunge/quizly-frontend](https://github.com/RobbyRunge/quizly-frontend)
+
 ## Features
 
 - 🔐 **User Authentication**: JWT-based authentication with registration, login, and logout
