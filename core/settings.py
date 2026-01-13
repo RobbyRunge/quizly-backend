@@ -14,6 +14,7 @@ from datetime import timedelta
 from pathlib import Path
 from dotenv import load_dotenv
 import os
+import sys
 
 load_dotenv()  # Load environment variables from a .env file if present
 
@@ -158,3 +159,40 @@ CORS_ALLOWED_ORIGINS = os.getenv(
 ).split(',')
 
 CORS_ALLOW_CREDENTIALS = True
+
+
+# Enable logging on server
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[{levelname}] {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'stream': sys.stdout,
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'auth_app': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}
