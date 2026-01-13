@@ -1,0 +1,10 @@
+services:
+
+    web:
+        entrypoint: [ "/app/backend.entrypoint.dev.sh" ]
+        volumes:
+            - .:/app
+            - quizly_media:/app/media
+            - quizly_static:/app/static
+        ports:
+            - "8000:8000"

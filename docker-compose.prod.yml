@@ -1,0 +1,65 @@
+services:
+    db:
+        restart: always
+        logging:
+            driver: "json-file"
+            options:
+                max-size: "10m"
+                max-file: "3"
+        healthcheck:
+            test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+    web:
+        entrypoint: [ "/app/backend.entrypoint.prod.sh" ]
+        volumes:
+            - /srv/quizly/media:/app/media
+            - /srv/quizly/static:/app/static
+        restart: always
+        logging:
+            options:
+                max-size: "10m"
+                max-file: "3"
+
+    nginx:
+        image: nginx:latest
+        container_name: quizly_nginx
+        restart: always
+        ports:
+            - "80:80"
+            - "443:443"
+        volumes:
+            - /srv/quizly/static:/srv/quizly/static
+            - /srv/quizly/media:/srv/quizly/media
+            - ./nginx/conf.d:/etc/nginx/conf.d
+            - ./certbot/www:/var/www/certbot
+            - ./certbot/conf:/etc/letsencrypt
+        depends_on:
+            - web
+
+    certbot:
+        image: certbot/certbot
+        container_name: quizly_certbot
+        volumes:
+            - ./certbot/www:/var/www/certbot
+            - ./certbot/conf:/etc/letsencrypt
+        entrypoint: ""
+        command: [ "certbot", "certonly", "--webroot", "-w", "/var/www/certbot", "-d", "api.quizly.robby-runge.de", "--email", "mail@robby-runge.de", "--agree-tos", "--no-eff-email" ]
+        depends_on:
+            - nginx
+
+    certbot-renew:
+        image: certbot/certbot
+        container_name: quizly_certbot_renew
+        restart: always
+        entrypoint: ""
+        command: >
+            sh -c "while :; do  certbot renew --quiet --webroot -w /var/www/certbot &&  nginx -s reload;  sleep 12h;  done"
+        volumes:
+            - ./certbot/www:/var/www/certbot
+            - ./certbot/conf:/etc/letsencrypt
+            - ./nginx/conf.d:/etc/nginx/conf.d
+        depends_on:
+            - nginx
