@@ -17,6 +17,7 @@ services:
         volumes:
             - /srv/quizly/media:/app/media
             - /srv/quizly/static:/app/static
+            - /srv/quizly/cookies.txt:/app/youtube_cookies.txt:ro
         restart: always
         logging:
             options:

@@ -100,18 +100,16 @@ class CreateQuizView(APIView):
     def _get_transcript(self, youtube_url):
         """
         Get transcript from YouTube video.
-        Uses yt-dlp to download subtitles as a workaround for YouTube blocking.
+        Uses yt-dlp to download subtitles with browser cookies to bypass bot detection.
         """
         import tempfile
         import json
 
         try:
-            # Extract video ID
             video_id = self._extract_video_id(youtube_url)
             if not video_id:
                 return None
 
-            # Use yt-dlp to download subtitles
             with tempfile.TemporaryDirectory() as tmpdir:
                 subtitle_file = f"{tmpdir}/subtitle"
 
@@ -126,6 +124,12 @@ class CreateQuizView(APIView):
                     'no_warnings': True,
                 }
 
+                # Cookie-File add, when available
+                cookie_path = os.getenv(
+                    'YOUTUBE_COOKIES_PATH', '/app/youtube_cookies.txt')
+                if os.path.exists(cookie_path):
+                    ydl_opts['cookiefile'] = cookie_path
+
                 try:
                     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                         ydl.download([youtube_url])
@@ -136,7 +140,6 @@ class CreateQuizView(APIView):
                         if os.path.exists(subtitle_path):
                             with open(subtitle_path, 'r', encoding='utf-8') as f:
                                 subtitle_data = json.load(f)
-                                # Extract text from events
                                 text_parts = []
                                 for event in subtitle_data.get('events', []):
                                     segs = event.get('segs', [])
@@ -148,8 +151,6 @@ class CreateQuizView(APIView):
                                     return ' '.join(text_parts)
                 except Exception as e:
                     print(f"yt-dlp subtitle download error: {str(e)}")
-
-            return None
 
         except Exception as e:
             print(f"Transcript error: {str(e)}")
@@ -207,10 +208,16 @@ class CreateQuizView(APIView):
         Returns None if extraction fails (non-critical).
         """
         ydl_opts = {
-            'extractor_args': {'youtube': {'player_client': ['ios', 'web']}},
             'quiet': True,
             'no_warnings': True,
         }
+
+        # Cookie-Datei hinzufügen, falls vorhanden
+        cookie_path = os.getenv('YOUTUBE_COOKIES_PATH',
+                                '/app/youtube_cookies.txt')
+        if os.path.exists(cookie_path):
+            ydl_opts['cookiefile'] = cookie_path
+
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
