@@ -122,12 +122,6 @@ class CreateQuizView(APIView):
                     'outtmpl': subtitle_file,
                     'quiet': True,
                     'no_warnings': True,
-                    'extractor_args': {
-                        'youtube': {
-                            'player_client': ['ios', 'android', 'web'],
-                            'player_skip': ['webpage', 'configs'],
-                        }
-                    },
                 }
 
                 # Cookie-File add, when available
