@@ -17,7 +17,9 @@ RUN apt-get update && \
     bash \
     libpq-dev \
     gcc \
-    postgresql-client && \
+    postgresql-client \
+    ffmpeg \
+    nodejs && \
     rm -rf /var/lib/apt/lists/* && \
     chmod +x backend.entrypoint.sh backend.entrypoint.dev.sh backend.entrypoint.prod.sh
 

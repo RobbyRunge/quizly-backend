@@ -2,7 +2,6 @@ import os
 import json
 import time
 import yt_dlp
-import whisper
 from google import genai
 
 from rest_framework import status
@@ -61,19 +60,18 @@ class CreateQuizView(APIView):
 
         normalized_url = f"https://www.youtube.com/watch?v={video_id}"
 
-        # Get video info
+        # Get video info (optional - don't fail if this doesn't work)
         video_info = self._extract_video_info(normalized_url)
         if not video_info:
-            return Response(
-                {'error': 'Failed to extract video information.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            # Use defaults if video info extraction fails
+            video_info = {
+                'title': f'Quiz from YouTube ({video_id})', 'description': ''}
 
         # Transcribe video
         transcript = self._get_transcript(youtube_url)
         if not transcript:
             return Response(
-                {'error': 'Failed to transcribe video audio.'},
+                {'error': 'Failed to get transcript. Please ensure the video has captions/subtitles available.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -101,16 +99,61 @@ class CreateQuizView(APIView):
 
     def _get_transcript(self, youtube_url):
         """
-        Download audio and transcribe it.
+        Get transcript from YouTube video.
+        Uses yt-dlp to download subtitles as a workaround for YouTube blocking.
         """
-        audio_path = self._download_audio(youtube_url)
-        transcript = self._transcribe_audio(audio_path)
+        import tempfile
+        import json
 
-        # Cleanup
-        if os.path.exists(audio_path):
-            os.remove(audio_path)
+        try:
+            # Extract video ID
+            video_id = self._extract_video_id(youtube_url)
+            if not video_id:
+                return None
 
-        return transcript
+            # Use yt-dlp to download subtitles
+            with tempfile.TemporaryDirectory() as tmpdir:
+                subtitle_file = f"{tmpdir}/subtitle"
+
+                ydl_opts = {
+                    'skip_download': True,
+                    'writesubtitles': True,
+                    'writeautomaticsub': True,
+                    'subtitleslangs': ['de', 'en'],
+                    'subtitlesformat': 'json3',
+                    'outtmpl': subtitle_file,
+                    'quiet': True,
+                    'no_warnings': True,
+                }
+
+                try:
+                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                        ydl.download([youtube_url])
+
+                    # Try to read the subtitle file
+                    for lang in ['de', 'en']:
+                        subtitle_path = f"{subtitle_file}.{lang}.json3"
+                        if os.path.exists(subtitle_path):
+                            with open(subtitle_path, 'r', encoding='utf-8') as f:
+                                subtitle_data = json.load(f)
+                                # Extract text from events
+                                text_parts = []
+                                for event in subtitle_data.get('events', []):
+                                    segs = event.get('segs', [])
+                                    for seg in segs:
+                                        if 'utf8' in seg:
+                                            text_parts.append(seg['utf8'])
+
+                                if text_parts:
+                                    return ' '.join(text_parts)
+                except Exception as e:
+                    print(f"yt-dlp subtitle download error: {str(e)}")
+
+            return None
+
+        except Exception as e:
+            print(f"Transcript error: {str(e)}")
+            return None
 
     def _create_quiz(self, user, url, video_info, quiz_data):
         """
@@ -161,13 +204,19 @@ class CreateQuizView(APIView):
     def _extract_video_info(self, url):
         """
         Extract video information using yt_dlp.
+        Returns None if extraction fails (non-critical).
         """
-        ydl_opts = {}
+        ydl_opts = {
+            'extractor_args': {'youtube': {'player_client': ['ios', 'web']}},
+            'quiet': True,
+            'no_warnings': True,
+        }
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
                 return ydl.sanitize_info(info)
-        except Exception:
+        except Exception as e:
+            print(f"Video info extraction failed (non-critical): {str(e)}")
             return None
 
     def _download_audio(self, url):
@@ -180,6 +229,12 @@ class CreateQuizView(APIView):
             "outtmpl": tmp_filename,
             "quiet": True,
             "noplaylist": True,
+            'extractor_args': {'youtube': {'player_client': ['ios', 'web']}},
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+                'preferredquality': '192',
+            }],
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
