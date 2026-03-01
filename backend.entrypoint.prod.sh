@@ -35,4 +35,4 @@ EOF
 # Worker wurde hier entfernt, der wurde in der docker-compose.prod.yml definiert
 echo "Production mode - starting Gunicorn without --reload"
 # kein --reload in der Produktion
-exec gunicorn core.wsgi:application --bind 0.0.0.0:8000
+exec gunicorn core.wsgi:application --bind 0.0.0.0:8000 --timeout 120
