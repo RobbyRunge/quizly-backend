@@ -67,16 +67,8 @@ class CreateQuizView(APIView):
             video_info = {
                 'title': f'Quiz from YouTube ({video_id})', 'description': ''}
 
-        # Transcribe video
-        transcript = self._get_transcript(youtube_url)
-        if not transcript:
-            return Response(
-                {'error': 'Failed to get transcript. Please ensure the video has captions/subtitles available.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # Generate quiz data
-        quiz_data = self._generate_questions_with_ai(transcript)
+        # Generate quiz data directly from YouTube URL via Gemini
+        quiz_data = self._generate_questions_with_ai(normalized_url)
         if quiz_data == 'RATE_LIMIT':
             return Response(
                 {
@@ -238,17 +230,23 @@ class CreateQuizView(APIView):
         except Exception:
             return None
 
-    def _generate_questions_with_ai(self, transcript):
+    def _generate_questions_with_ai(self, youtube_url):
         """
-        Generate quiz questions from transcript using Gemini API.
+        Generate quiz questions directly from YouTube URL using Gemini API.
         """
-        prompt = self._build_ai_prompt(transcript)
+        from google.genai import types
+
+        prompt = self._build_ai_prompt()
+        contents = [
+            types.Part(file_data=types.FileData(file_uri=youtube_url)),
+            types.Part(text=prompt),
+        ]
 
         for attempt in range(2):  # max_retries = 2
             try:
                 response = gemini_client.models.generate_content(
                     model='gemini-2.5-flash',
-                    contents=prompt
+                    contents=contents
                 )
 
                 result = self._parse_ai_response(response.text)
@@ -265,35 +263,32 @@ class CreateQuizView(APIView):
 
         return None
 
-    def _build_ai_prompt(self, transcript):
+    def _build_ai_prompt(self):
         """Build the prompt for AI question generation."""
-        return f"""
-            Based on the following transcript, generate a quiz in valid JSON format.
+        return """
+            Watch the YouTube video and generate a quiz based on its content in valid JSON format.
 
             The quiz must follow this exact structure:
 
-            {{
-            "title": "Create a concise quiz title based on the topic of the transcript.",
-            "description": "Summarize the transcript in no more than 150 characters. Do not include any quiz questions or answers.",
+            {
+            "title": "Create a concise quiz title based on the topic of the video.",
+            "description": "Summarize the video in no more than 150 characters. Do not include any quiz questions or answers.",
             "questions": [
-                {{
+                {
                 "question_title": "The question goes here.",
                 "question_options": ["Option A", "Option B", "Option C", "Option D"],
                 "answer": "The correct answer from the above options"
-                }},
+                },
                 ...
                 (exactly 10 questions)
             ]
-            }}
+            }
 
             Requirements:
             - Each question must have exactly 4 distinct answer options.
             - Only one correct answer is allowed per question, and it must be present in 'question_options'.
             - The output must be valid JSON and parsable as-is (e.g., using Python's json.loads).
             - Do not include explanations, comments, or any text outside the JSON.
-
-            Transcript:
-            {transcript[:3000]}
             """
 
     def _parse_ai_response(self, response_text):
