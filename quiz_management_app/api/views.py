@@ -108,12 +108,16 @@ class CreateQuizView(APIView):
             if not video_id:
                 return None
 
+            cookie_path = os.getenv('YOUTUBE_COOKIES_PATH', '/app/youtube_cookies.txt')
+            cookies = cookie_path if os.path.exists(cookie_path) else None
+
             try:
                 snippets = YouTubeTranscriptApi.get_transcript(
-                    video_id, languages=['de', 'en'])
+                    video_id, languages=['de', 'en'], cookies=cookies)
             except Exception:
                 # Fallback: try any available language
-                transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+                transcript_list = YouTubeTranscriptApi.list_transcripts(
+                    video_id, cookies=cookies)
                 transcript = transcript_list.find_transcript(['de', 'en'])
                 snippets = transcript.fetch()
 
