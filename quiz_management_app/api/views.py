@@ -99,58 +99,26 @@ class CreateQuizView(APIView):
 
     def _get_transcript(self, youtube_url):
         """
-        Get transcript from YouTube video.
-        Uses yt-dlp to download subtitles with browser cookies to bypass bot detection.
+        Get transcript from YouTube video using youtube-transcript-api.
         """
-        import tempfile
-        import json
+        from youtube_transcript_api import YouTubeTranscriptApi
 
         try:
             video_id = self._extract_video_id(youtube_url)
             if not video_id:
                 return None
 
-            with tempfile.TemporaryDirectory() as tmpdir:
-                subtitle_file = f"{tmpdir}/subtitle"
+            try:
+                snippets = YouTubeTranscriptApi.get_transcript(
+                    video_id, languages=['de', 'en'])
+            except Exception:
+                # Fallback: try any available language
+                transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+                transcript = transcript_list.find_transcript(['de', 'en'])
+                snippets = transcript.fetch()
 
-                ydl_opts = {
-                    'skip_download': True,
-                    'writesubtitles': True,
-                    'writeautomaticsub': True,
-                    'subtitleslangs': ['de', 'en'],
-                    'subtitlesformat': 'json3',
-                    'outtmpl': subtitle_file,
-                    'quiet': True,
-                    'no_warnings': True,
-                }
-
-                # Cookie-File add, when available
-                cookie_path = os.getenv(
-                    'YOUTUBE_COOKIES_PATH', '/app/youtube_cookies.txt')
-                if os.path.exists(cookie_path):
-                    ydl_opts['cookiefile'] = cookie_path
-
-                try:
-                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                        ydl.download([youtube_url])
-
-                    # Try to read the subtitle file
-                    for lang in ['de', 'en']:
-                        subtitle_path = f"{subtitle_file}.{lang}.json3"
-                        if os.path.exists(subtitle_path):
-                            with open(subtitle_path, 'r', encoding='utf-8') as f:
-                                subtitle_data = json.load(f)
-                                text_parts = []
-                                for event in subtitle_data.get('events', []):
-                                    segs = event.get('segs', [])
-                                    for seg in segs:
-                                        if 'utf8' in seg:
-                                            text_parts.append(seg['utf8'])
-
-                                if text_parts:
-                                    return ' '.join(text_parts)
-                except Exception as e:
-                    print(f"yt-dlp subtitle download error: {str(e)}")
+            text = ' '.join([entry['text'] for entry in snippets])
+            return text.strip() or None
 
         except Exception as e:
             print(f"Transcript error: {str(e)}")
